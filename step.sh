@@ -143,7 +143,7 @@ STATUSCODE=$(curl \
 	--silent --show-error \
 	--output /dev/stderr --write-out "%{http_code}" \
 	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/symbol_uploads" \
-	-d '{"symbol_type":"${symbol_type}"}'
+	-d "{\"symbol_type\": ${symbol_type}}"
 	2> "${TMPFILE}")
 if [ "${STATUSCODE}" -ne "201" ]
 then
