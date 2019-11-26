@@ -133,8 +133,9 @@ RELEASE_ID=$(cat "${TMPFILE}" | jq .release_id --raw-output)
 echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
 rm "${TMPFILE}"
 
-echo_info "Getting a symbols upload url for ${appcenter_org}/${appcenter_name} and symbol type ${symbol_type}"
+echo_info "Getting a symbols upload url for ${appcenter_org}/${appcenter_name} and symbol type '${symbol_type}'"
 TMPFILE=$(mktemp)
+SYMBOL_TYPE_ENCODED="$( jq --null-input --compact-output --arg str "$symbol_type" '$str' )"
 STATUSCODE=$(curl \
 	-X POST \
 	--header 'Content-Type: application/json' \
@@ -143,34 +144,24 @@ STATUSCODE=$(curl \
 	--silent --show-error \
 	--output /dev/stderr --write-out "%{http_code}" \
 	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/symbol_uploads" \
-	-d "{\"symbol_type\": ${symbol_type}}"
+	-d "{\"symbol_type\": ${SYMBOL_TYPE_ENCODED}, \"file_name\": \"mapping.txt\", \"version\": \"${version_name}\", \"build\": \"${version_code}\"}" \
 	2> "${TMPFILE}")
-if [ "${STATUSCODE}" -ne "201" ]
+if [ "${STATUSCODE}" -ne "200" ]
 then
 	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
 fi
 
 SYMBOL_UPLOAD_URL=$(cat "${TMPFILE}" | jq .upload_url --raw-output)
 SYMBOL_UPLOAD_ID=$(cat "${TMPFILE}" | jq .symbol_upload_id --raw-output)
+echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
+rm "${TMPFILE}"
 
 echo_info "Uploading ${symbols_path} to ${SYMBOL_UPLOAD_URL}"
-TMPFILE=$(mktemp)
-STATUSCODE=$(curl \
-    -X PUT "{SYMBOL_UPLOAD_URL}" \
-    -H 'x-ms-blob-type: BlockBlob' \
-    --upload-file '{path to file}' \
-	--silent --show-error \
-	--output /dev/stderr --write-out "%{http_code}" \
-	2> "${TMPFILE}")
-if [ "${STATUSCODE}" -gt "299" ]
-then
-	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
-fi
-echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
-rm "${TMPFILE}"
-
-echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
-rm "${TMPFILE}"
+$(curl \
+	-X PUT \
+	"${SYMBOL_UPLOAD_URL}" \
+	--header "x-ms-blob-type: BlockBlob" \
+	--upload-file ${symbols_path})
 
 echo_info "Committing symbols"
 TMPFILE=$(mktemp)
@@ -188,7 +179,6 @@ if [ "${STATUSCODE}" -ne "200" ]
 then
 	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
 fi
-RELEASE_ID=$(cat "${TMPFILE}" | jq .release_id --raw-output)
 echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
 rm "${TMPFILE}"
 

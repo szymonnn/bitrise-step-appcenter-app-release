@@ -43,8 +43,6 @@ workflows:
         - appcenter_name: $APPCENTER_NAME
         - appcenter_org: $APPCENTER_ORG
         - artifact_path: $ARTIFACT_PATH
-        - symbols_path: $SYMBOLS_PATH
-        - symbol_type: $SYMBOL_TYPE
         - release_notes: $RELEASE_NOTES
         - distribution_groups: $DISTRIBUTION_GROUPS
         - notify_testers: $NOTIFY_TESTERS

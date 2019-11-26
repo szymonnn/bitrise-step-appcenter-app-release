@@ -96,6 +96,16 @@ inputs:
       description: "This should be 'Apple' for iOS or 'AndroidProguard' for Android"
       is_expand: true
       is_required: false
+  - version_code: $VERSION_CODE
+    opts:
+      title: "Version code"
+      is_expand: true
+      is_required: false
+  - version_name: $VERSION_NAME
+    opts:
+      title: "Version name"
+      is_expand: true
+      is_required: false
   - distribution_groups: $DISTRIBUTION_GROUPS
     opts:
       title: "AppCenter distribution groups"
