@@ -133,7 +133,7 @@ RELEASE_ID=$(cat "${TMPFILE}" | jq .release_id --raw-output)
 echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
 rm "${TMPFILE}"
 
-echo_info "Getting a symbols upload url for ${appcenter_org}/${appcenter_name}"
+echo_info "Getting a symbols upload url for ${appcenter_org}/${appcenter_name} and symbol type ${symbol_type}"
 TMPFILE=$(mktemp)
 STATUSCODE=$(curl \
 	-X POST \
@@ -143,7 +143,7 @@ STATUSCODE=$(curl \
 	--silent --show-error \
 	--output /dev/stderr --write-out "%{http_code}" \
 	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/symbol_uploads" \
-	-d '{"symbol_type":"AndroidProguard"}'
+	-d '{"symbol_type":"${symbol_type}"}'
 	2> "${TMPFILE}")
 if [ "${STATUSCODE}" -ne "201" ]
 then
