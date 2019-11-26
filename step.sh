@@ -133,6 +133,65 @@ RELEASE_ID=$(cat "${TMPFILE}" | jq .release_id --raw-output)
 echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
 rm "${TMPFILE}"
 
+echo_info "Getting a symbols upload url for ${appcenter_org}/${appcenter_name}"
+TMPFILE=$(mktemp)
+STATUSCODE=$(curl \
+	-X POST \
+	--header 'Content-Type: application/json' \
+	--header "accept: application/json" \
+	--header "X-API-Token: ${appcenter_api_token}" \
+	--silent --show-error \
+	--output /dev/stderr --write-out "%{http_code}" \
+	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/symbol_uploads" \
+	-d '{"symbol_type":"AndroidProguard"}'
+	2> "${TMPFILE}")
+if [ "${STATUSCODE}" -ne "201" ]
+then
+	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
+fi
+
+SYMBOL_UPLOAD_URL=$(cat "${TMPFILE}" | jq .upload_url --raw-output)
+SYMBOL_UPLOAD_ID=$(cat "${TMPFILE}" | jq .symbol_upload_id --raw-output)
+
+echo_info "Uploading ${symbols_path} to ${SYMBOL_UPLOAD_URL}"
+TMPFILE=$(mktemp)
+STATUSCODE=$(curl \
+    -X PUT "{SYMBOL_UPLOAD_URL}" \
+    -H 'x-ms-blob-type: BlockBlob' \
+    --upload-file '{path to file}' \
+	--silent --show-error \
+	--output /dev/stderr --write-out "%{http_code}" \
+	2> "${TMPFILE}")
+if [ "${STATUSCODE}" -gt "299" ]
+then
+	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
+fi
+echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
+rm "${TMPFILE}"
+
+echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
+rm "${TMPFILE}"
+
+echo_info "Committing symbols"
+TMPFILE=$(mktemp)
+STATUSCODE=$(curl \
+	-X PATCH \
+	--header "accept: application/json" \
+	--header "X-API-Token: ${appcenter_api_token}" \
+	--header "Content-Type: application/json" \
+	--silent --show-error \
+	--output /dev/stderr --write-out "%{http_code}" \
+	-d '{ "status": "committed"}' \
+	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/symbol_uploads/${SYMBOL_UPLOAD_ID}" \
+	2> "${TMPFILE}")
+if [ "${STATUSCODE}" -ne "200" ]
+then
+	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
+fi
+RELEASE_ID=$(cat "${TMPFILE}" | jq .release_id --raw-output)
+echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
+rm "${TMPFILE}"
+
 IFS=', ' read -r -a DISTRIBUTION_GROUPS <<< ${distribution_groups:-}
 if [ ${#DISTRIBUTION_GROUPS[@]} -eq 0 ]
 then
@@ -151,6 +210,7 @@ then
 	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
 fi
 echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
+
 SAVEIFS="${IFS}"
 IFS=$'\n'
 DISTRIBUTION_GROUPS=( $(cat "${TMPFILE}" | jq '.[].name' --raw-output) )

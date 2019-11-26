@@ -84,6 +84,18 @@ inputs:
       title: "path to the built application file (.ipa or .apk)"
       is_expand: true
       is_required: true
+  - symbols_path: $SYMBOLS_PATH
+    opts:
+      title: "path to the symbols of application file (.dSYM or mapping.txt)"
+      description: "It's needed if you use AppCenter Crash reporting"
+      is_expand: true
+      is_required: false
+  - symbol_type: $SYMBOL_TYPE
+    opts:
+      title: "Symbol type"
+      description: "This should be 'Apple' for iOS or 'AndroidProguard' for Android"
+      is_expand: true
+      is_required: false
   - distribution_groups: $DISTRIBUTION_GROUPS
     opts:
       title: "AppCenter distribution groups"
